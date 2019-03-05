@@ -19,11 +19,11 @@ class Point:
       self.x = x
       self.y = y
 
-      # Point at Infinity
+      '''Point at Infinity'''
       if self.x is None and self.y is None:
           return
       
-      # Validate that Point is on the elliptic curve y**2 == x**3 + a*x + b
+      ''''Validate that Point is on the elliptic curve y**2 == x**3 + a*x + b'''
       if self.y**2 != self.x**3 + a * x + b:
           raise ValueError('({}, {}) is not on the curve'.format(x, y))
 
@@ -33,7 +33,7 @@ class Point:
 
   def __ne__(self, other):
       # this should be the inverse of the == operator
-      return self != other
+      return not (self == other)
 
   def __repr__(self):
       if self.x is None:
