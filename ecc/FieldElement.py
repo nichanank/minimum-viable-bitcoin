@@ -1,6 +1,5 @@
 from io import BytesIO
 from random import randint
-from unittest import TestCase
 
 import hashlib
 import hmac
