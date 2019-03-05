@@ -2,6 +2,8 @@ from io import BytesIO
 from field_element import FieldElement
 from point import Point
 from helper import encode_base58_checksum, hash160
+import hmac
+import hashlib
 
 '''secp256k1 constants'''
 A = 0
@@ -154,3 +156,62 @@ class Signature:
     if len(signature_bin) != 6 + rlength + slength:
         raise SyntaxError("Signature too long")
     return cls(r, s)
+
+class PrivateKey:
+
+    def __init__(self, secret):
+        self.secret = secret
+        self.point = secret * G
+
+    def hex(self):
+        return '{:x}'.format(self.secret).zfill(64)
+
+    def sign(self, z):
+        k = self.deterministic_k(z)
+        # r is the x coordinate of the resulting point k*G
+        r = (k * G).x.num
+        # remember 1/k = pow(k, N-2, N)
+        k_inv = pow(k, N - 2, N)
+        # s = (z+r*secret) / k
+        s = (z + r * self.secret) * k_inv % N
+        if s > N / 2:
+            s = N - s
+        # return an instance of Signature:
+        # Signature(r, s)
+        return Signature(r, s)
+
+    def deterministic_k(self, z):
+        k = b'\x00' * 32
+        v = b'\x01' * 32
+        if z > N:
+            z -= N
+        z_bytes = z.to_bytes(32, 'big')
+        secret_bytes = self.secret.to_bytes(32, 'big')
+        s256 = hashlib.sha256
+        k = hmac.new(k, v + b'\x00' + secret_bytes + z_bytes, s256).digest()
+        v = hmac.new(k, v, s256).digest()
+        k = hmac.new(k, v + b'\x01' + secret_bytes + z_bytes, s256).digest()
+        v = hmac.new(k, v, s256).digest()
+        while True:
+            v = hmac.new(k, v, s256).digest()
+            candidate = int.from_bytes(v, 'big')
+            if candidate >= 1 and candidate < N:
+                return candidate
+            k = hmac.new(k, v + b'\x00', s256).digest()
+            v = hmac.new(k, v, s256).digest()
+
+    def wif(self, compressed=True, testnet=False):
+        # convert the secret from integer to a 32-bytes in big endian using num.to_bytes(32, 'big')
+        secret_bytes = self.secret.to_bytes(32, 'big')
+        # prepend b'\xef' on testnet, b'\x80' on mainnet
+        if testnet:
+            prefix = b'\xef'
+        else:
+            prefix = b'\x80'
+        # append b'\x01' if compressed
+        if compressed:
+            suffix = b'\x01'
+        else:
+            suffix = b''
+        # encode_base58_checksum the whole thing
+        return encode_base58_checksum(prefix + secret_bytes + suffix)
