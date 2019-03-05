@@ -1,7 +1,7 @@
-from unittest import TestCase
-from ecc.field_element import FieldElement
+import unittest
+from field_element import FieldElement
 
-class FieldElementTest(TestCase):
+class FieldElementTest(unittest.TestCase):
 
     def test_ne(self):
         a = FieldElement(2, 31)
@@ -53,3 +53,6 @@ class FieldElementTest(TestCase):
         a = FieldElement(4, 31)
         b = FieldElement(11, 31)
         self.assertEqual(a**-4 * b, FieldElement(13, 31))
+
+if __name__ == "__main__":
+    unittest.main()

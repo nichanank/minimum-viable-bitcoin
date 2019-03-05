@@ -1,7 +1,7 @@
-from unittest import TestCase
-from ecc.point import Point
+import unittest
+from point import Point
 
-class PointTest(TestCase):
+class PointTest(unittest.TestCase):
 
     def test_ne(self):
         a = Point(x=3, y=-7, a=5, b=7)
@@ -32,3 +32,6 @@ class PointTest(TestCase):
     def test_add2(self):
         a = Point(x=-1, y=1, a=5, b=7)
         self.assertEqual(a + a, Point(x=18, y=-77, a=5, b=7))
+
+if __name__ == "__main__":
+    unittest.main()

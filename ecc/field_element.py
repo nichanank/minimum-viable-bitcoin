@@ -30,7 +30,7 @@ class FieldElement:
     return self.num == other.num and self.prime == other.prime
 
   def __ne__(self, other):
-    return self != other
+    return not (self == other)
 
   # Modulo arithmatic on field elements
   
