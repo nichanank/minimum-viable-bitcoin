@@ -1,14 +1,13 @@
-from field_element import FieldElement
+from .field_element import FieldElement
 
 '''
-We are interested in specific points on the elliptic curve. This means that the Point (x, y) satisfies some y**2 == x**3 + a*x + b
+Elliptic Curve points are the primitives for our public/private key pairs. A valid Point (x, y) satisfies some y**2 == x**3 + a*x + b
 
 For any elliptic curve, a given line will intersect the curve at either 1 point or 3 points. EXCEPT when:
 - the line is vertical
 - the line is a tangent to the curve
 
-Point addition:
-Adding two EC points results in a third point that is also on the curve. Point addition is non-linear, while it is trivial to calculate C in A + B = C, it is very difficult to derive B given A and C.
+Adding two EC points results in a third point that is also on the curve. Point addition is non-linear: while it is trivial to calculate C in A + B = C, it is very difficult to derive B given A and C.
 '''
 
 class Point:
@@ -19,11 +18,11 @@ class Point:
       self.x = x
       self.y = y
 
-      '''Point at Infinity'''
+      '''Check if (x, y) is the Point at Infinity'''
       if self.x is None and self.y is None:
           return
       
-      ''''Validate that Point is on the elliptic curve y**2 == x**3 + a*x + b'''
+      ''''Validate that Point (x, y) is on the elliptic curve y**2 == x**3 + a*x + b'''
       if self.y**2 != self.x**3 + a * x + b:
           raise ValueError('({}, {}) is not on the curve'.format(x, y))
 
@@ -32,7 +31,6 @@ class Point:
           and self.a == other.a and self.b == other.b
 
   def __ne__(self, other):
-      # this should be the inverse of the == operator
       return not (self == other)
 
   def __repr__(self):
@@ -97,3 +95,9 @@ class Point:
           current += current
           coef >>= 1
       return result
+
+def main():
+    print('This is the Point class')
+
+if __name__ == "__main__":
+    main()

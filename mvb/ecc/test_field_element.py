@@ -1,5 +1,5 @@
 import unittest
-from field_element import FieldElement
+from .field_element import FieldElement
 
 class FieldElementTest(unittest.TestCase):
 

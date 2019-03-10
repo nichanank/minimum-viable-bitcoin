@@ -32,7 +32,7 @@ class FieldElement:
   def __ne__(self, other):
     return not (self == other)
 
-  # Modulo arithmatic on field elements
+  # Modulo arithmatic operations on field elements
   
   def __add__(self, other):
     if self.prime != other.prime:
@@ -68,3 +68,9 @@ class FieldElement:
   def __rmul__(self, coefficient):
     num = (self.num * coefficient) % self.prime
     return self.__class__(num=num, prime=self.prime)
+
+def main():
+    print('This is the FieldElement class')
+
+if __name__ == "__main__":
+    main()

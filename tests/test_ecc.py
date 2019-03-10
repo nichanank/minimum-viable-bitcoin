@@ -1,6 +1,6 @@
 import unittest
-from field_element import FieldElement
-from point import Point
+from mvb.ecc import FieldElement, Point
+# from .context import FieldElement, Point
 
 class ECCTest(unittest.TestCase):
 

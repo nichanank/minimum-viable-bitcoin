@@ -1,9 +1,11 @@
 from io import BytesIO
-from field_element import FieldElement
-from point import Point
-from helper import encode_base58_checksum, hash160
+from .field_element import FieldElement
+from .point import Point
+from .helper import encode_base58_checksum, hash160
 import hmac
 import hashlib
+
+'''P = eG, where P is the public key and e is the private key, is an asymmetric equation. The private key is a single 256-bit number and the public key is a coordinate (x,y), where x and y are each 256-bit numbers.'''
 
 '''secp256k1 constants'''
 A = 0
@@ -23,6 +25,7 @@ class S256Field(FieldElement):
     return self**((P + 1) // 4)
 
 
+'''Public Keys in Elliptic Curves are Point coordinates in the form (x, y)'''
 class S256Point(Point):
 
   def __init__(self, x, y, a=None, b=None):
@@ -79,6 +82,7 @@ class S256Point(Point):
         prefix = b'\x00'
     return encode_base58_checksum(prefix + h160)
 
+
   @classmethod
   def parse(self, sec_bin):
     '''takes a SEC binary and returns a Point object'''
@@ -88,10 +92,10 @@ class S256Point(Point):
         return S256Point(x=x, y=y)
     is_even = sec_bin[0] == 2
     x = S256Field(int.from_bytes(sec_bin[1:], 'big'))
-    # right side of the equation y^2 = x^3 + 7
-    alpha = S256Field(B) + x**3
-    # solve for left side
-    beta = alpha.sqrt()
+
+    '''Calculating y given x coordinate requires us to calculate a square root in a finite field.'''
+    alpha = S256Field(B) + x**3 # right side of the equation y^2 = x^3 + 7
+    beta = alpha.sqrt() # solve for left side
     if beta.num % 2 == 0:
         even_beta = beta
         odd_beta = S256Field(P - beta.num)
@@ -103,7 +107,7 @@ class S256Point(Point):
     else:
         return S256Point(x, odd_beta)
 
-'''secp256k1 constant'''
+'''secp256k1 constant for the generator point, to which we will multiply n times to get public key P'''
 G = S256Point(
 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798,
 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8)
@@ -159,59 +163,65 @@ class Signature:
 
 class PrivateKey:
 
-    def __init__(self, secret):
-        self.secret = secret
-        self.point = secret * G
+  def __init__(self, secret):
+    self.secret = secret
+    self.point = secret * G
 
-    def hex(self):
-        return '{:x}'.format(self.secret).zfill(64)
+  def hex(self):
+    return '{:x}'.format(self.secret).zfill(64)
 
-    def sign(self, z):
-        k = self.deterministic_k(z)
-        # r is the x coordinate of the resulting point k*G
-        r = (k * G).x.num
-        # remember 1/k = pow(k, N-2, N)
-        k_inv = pow(k, N - 2, N)
-        # s = (z+r*secret) / k
-        s = (z + r * self.secret) * k_inv % N
-        if s > N / 2:
-            s = N - s
-        # return an instance of Signature:
-        # Signature(r, s)
-        return Signature(r, s)
+  def sign(self, z):
+    k = self.deterministic_k(z)
+    # r is the x coordinate of the resulting point k*G
+    r = (k * G).x.num
+    # remember 1/k = pow(k, N-2, N)
+    k_inv = pow(k, N - 2, N)
+    # s = (z+r*secret) / k
+    s = (z + r * self.secret) * k_inv % N
+    if s > N / 2:
+        s = N - s
+    # return an instance of Signature:
+    # Signature(r, s)
+    return Signature(r, s)
 
-    def deterministic_k(self, z):
-        k = b'\x00' * 32
-        v = b'\x01' * 32
-        if z > N:
-            z -= N
-        z_bytes = z.to_bytes(32, 'big')
-        secret_bytes = self.secret.to_bytes(32, 'big')
-        s256 = hashlib.sha256
-        k = hmac.new(k, v + b'\x00' + secret_bytes + z_bytes, s256).digest()
+  def deterministic_k(self, z):
+    k = b'\x00' * 32
+    v = b'\x01' * 32
+    if z > N:
+        z -= N
+    z_bytes = z.to_bytes(32, 'big')
+    secret_bytes = self.secret.to_bytes(32, 'big')
+    s256 = hashlib.sha256
+    k = hmac.new(k, v + b'\x00' + secret_bytes + z_bytes, s256).digest()
+    v = hmac.new(k, v, s256).digest()
+    k = hmac.new(k, v + b'\x01' + secret_bytes + z_bytes, s256).digest()
+    v = hmac.new(k, v, s256).digest()
+    while True:
         v = hmac.new(k, v, s256).digest()
-        k = hmac.new(k, v + b'\x01' + secret_bytes + z_bytes, s256).digest()
+        candidate = int.from_bytes(v, 'big')
+        if candidate >= 1 and candidate < N:
+            return candidate
+        k = hmac.new(k, v + b'\x00', s256).digest()
         v = hmac.new(k, v, s256).digest()
-        while True:
-            v = hmac.new(k, v, s256).digest()
-            candidate = int.from_bytes(v, 'big')
-            if candidate >= 1 and candidate < N:
-                return candidate
-            k = hmac.new(k, v + b'\x00', s256).digest()
-            v = hmac.new(k, v, s256).digest()
 
-    def wif(self, compressed=True, testnet=False):
-        # convert the secret from integer to a 32-bytes in big endian using num.to_bytes(32, 'big')
-        secret_bytes = self.secret.to_bytes(32, 'big')
-        # prepend b'\xef' on testnet, b'\x80' on mainnet
-        if testnet:
-            prefix = b'\xef'
-        else:
-            prefix = b'\x80'
-        # append b'\x01' if compressed
-        if compressed:
-            suffix = b'\x01'
-        else:
-            suffix = b''
-        # encode_base58_checksum the whole thing
-        return encode_base58_checksum(prefix + secret_bytes + suffix)
+  def wif(self, compressed=True, testnet=False):
+    # convert the secret from integer to a 32-bytes in big endian using num.to_bytes(32, 'big')
+    secret_bytes = self.secret.to_bytes(32, 'big')
+    # prepend b'\xef' on testnet, b'\x80' on mainnet
+    if testnet:
+        prefix = b'\xef'
+    else:
+        prefix = b'\x80'
+    # append b'\x01' if compressed
+    if compressed:
+        suffix = b'\x01'
+    else:
+        suffix = b''
+    # encode_base58_checksum the whole thing
+    return encode_base58_checksum(prefix + secret_bytes + suffix)
+
+def main():
+    print('This is the S256 class')
+
+if __name__ == "__main__":
+    main()
