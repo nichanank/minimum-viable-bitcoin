@@ -1,5 +1,15 @@
 import unittest
-from .point import Point
+from point import Point
+
+from s256 import (
+    S256Point,
+    Signature,
+)
+
+from helper import (
+    hash160,
+    hash256,
+)
 
 class PointTest(unittest.TestCase):
 

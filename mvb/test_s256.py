@@ -1,6 +1,6 @@
 import unittest
 from random import randint
-from .s256 import S256Field, S256Point, G, N, Signature, PrivateKey
+from s256 import S256Field, S256Point, G, N, Signature, PrivateKey
 
 class S256Test(unittest.TestCase):
 

@@ -1,7 +1,7 @@
 from io import BytesIO
-from .field_element import FieldElement
-from .point import Point
-from .helper import encode_base58_checksum, hash160
+from field_element import FieldElement
+from point import Point
+from helper import encode_base58_checksum, hash160
 import hmac
 import hashlib
 

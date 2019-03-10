@@ -3,8 +3,8 @@ from io import BytesIO
 import json
 import requests
 
-from mvb.ecc import PrivateKey
-from mvb.helper import (
+from s256 import PrivateKey
+from helper import (
     encode_varint,
     hash256,
     int_to_little_endian,

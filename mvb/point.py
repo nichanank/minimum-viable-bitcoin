@@ -1,4 +1,4 @@
-from .field_element import FieldElement
+from field_element import FieldElement
 
 '''
 Elliptic Curve points are the primitives for our public/private key pairs. A valid Point (x, y) satisfies some y**2 == x**3 + a*x + b
