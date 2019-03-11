@@ -166,3 +166,16 @@ def merkle_root(hashes):
         current_level = merkle_parent_level(current_level)
     # return the 1st item of the current level
     return current_level[0]
+
+
+def bytes_to_bit_field(some_bytes):
+    flag_bits = []
+    # iterate over each byte of flags
+    for byte in some_bytes:
+        # iterate over each bit, right-to-left
+        for _ in range(8):
+            # add the current bit (byte & 1)
+            flag_bits.append(byte & 1)
+            # rightshift the byte 1
+            byte >>= 1
+    return flag_bits
